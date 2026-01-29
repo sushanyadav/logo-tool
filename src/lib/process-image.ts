@@ -5,33 +5,33 @@ export async function processLogo(
   targetHeight: number,
   padding: number = 2
 ) {
+  // Process at 2x resolution for retina displays
+  const scale = 2;
+  const scaledHeight = targetHeight * scale;
+  const scaledPadding = padding * scale;
+
   // Trim whitespace/transparency
   const trimmed = await sharp(buffer).trim().toBuffer();
-
-  // Get trimmed image metadata
-  const metadata = await sharp(trimmed).metadata();
-  const trimmedWidth = metadata.width || 100;
-  const trimmedHeight = metadata.height || 100;
-
-  // Calculate new dimensions with padding
-  const paddedWidth = trimmedWidth + padding * 2;
-  const paddedHeight = trimmedHeight + padding * 2;
 
   // Add padding by extending with transparent background
   const padded = await sharp(trimmed)
     .extend({
-      top: padding,
-      bottom: padding,
-      left: padding,
-      right: padding,
+      top: scaledPadding,
+      bottom: scaledPadding,
+      left: scaledPadding,
+      right: scaledPadding,
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .toBuffer();
 
   // Resize to target height while maintaining aspect ratio
   const processed = await sharp(padded)
-    .resize({ height: targetHeight, withoutEnlargement: true })
-    .png()
+    .resize({
+      height: scaledHeight,
+      kernel: sharp.kernel.lanczos3,
+    })
+    .sharpen({ sigma: 1 })
+    .png({ compressionLevel: 9 })
     .toBuffer();
 
   return processed;
